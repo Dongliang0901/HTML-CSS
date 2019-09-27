@@ -5,18 +5,24 @@
 <title>无标题文档</title>
 </head>
 	
-	<!--frame: void 控制四条边 默认无边框，below：仅有底部边框，above：仅有顶部边框，hsider：表示仅有顶部边框和底部边框，lhs：仅有左侧边框，rhs：仅有右侧边框，vsides：左右侧边框，box：包含四个边框，border：包含四个边框-->
+	<!--frame: void 控制四条边 默认无边框，below：仅有底部边框，above：仅有顶部边框，hsider：表示仅有顶部边框和底部边框，lhs：仅有左侧边框，rhs：仅有右侧边框，vsides：左右侧边框，box：包含四个边框，border：包含四个边框，-->
+	<!--rules: all: 表示包括所有分割线，rows：仅有行分割线，clos：仅有列分割线，groups：尽在行组和列组之间有分割线 -->
+	<!--bgcolor: 背景颜色-->
+	<!--valign: 水平对齐方式-->
+	<!--rowspan: 单元格所占行数-->
+	<!--colspan: 单元格所占列数-->
+	
 <body>
-	<table width="960" height="280" border="1"  cellspacing="0" cellpadding="10" frame="void">
-	<caption>表格的标题</caption>
-		<tr align="center">
+	<table width="960" height="280" border="1"  cellspacing="0" cellpadding="10" frame="void" rules="groups ">
+	<caption align="bottom">表格的标题</caption>
+		<tr align="center" valign="bottom">
 			<th>班级</th>
 			<th>姓名</th>
 			<th>年龄</th>
 			<th>成绩</th>		
 		</tr>
-		<tr align="center">
-			<td>四年级一班</td>
+		<tr align="center" bgcolor="red">
+			<td bgcolor="green" valign="baseline" width="100" height="100" rowspan="2" colspan="2">四年级一班</td>
 			<td>张三</td>
 			<td>16</td>
 			<td>80</td>
