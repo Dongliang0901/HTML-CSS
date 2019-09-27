@@ -1,0 +1,634 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>21点27分</title>
+</head>
+<body>
+	<!--外部链接,_blank新开启一个页面-->
+	<a href = "http://www.baidu.com" target="_blank">百度</a> 
+	<a href="#dibu">到页面底部</a>
+	<a name="dingbu"></a>
+	<div>
+		<p>
+原创
+java通信：远程画板
+2018-03-15 14:04:51 渐无书 阅读数 275更多
+分类专栏： java新手
+版权声明：本文为博主原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接和本声明。
+本文链接：https://blog.csdn.net/Carter0524/article/details/79567146
+
+通信：远程画板的构造。
+我认为通信的关键之处在于io流的把握和通信协议的构建。
+io流保证传输数据的格式内容正确，而通信协议则是由通信双方确定的通信规则。
+本次远程画板的构建属于通信的基础应用。
+目标：甲方和乙方各拥有一个相同大小的画图界面，在甲方画图时，乙方界面会出现相同的图案。
+甲类为服务器类包括服务器界面以及监听器。
+1.服务器类:构造服务器界面并添加监听机制
+
+package 画图交互;
+
+import java.awt.Graphics;
+
+import javax.swing.JFrame;
+
+public class pic extends JFrame{
+    public  static void main(String args[]) {
+        new pic().showUI();
+    }
+
+    //构建甲方界面：300*300，设计鼠标监听器
+    public void showUI() {
+        this.setTitle("交互画板A");
+        this.setSize(300, 300);
+        this.setDefaultCloseOperation(3);
+        this.setLocationRelativeTo(null);
+        this.setVisible(true);
+        Graphics g = this.getGraphics();
+        //设置鼠标监听器
+        this.addMouseListener(new UIlistener(g));
+    }
+}
+
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+    8
+    9
+    10
+    11
+    12
+    13
+    14
+    15
+    16
+    17
+    18
+    19
+    20
+    21
+    22
+    23
+    24
+
+2.监听器类：得到线段的起点和终点并启动serverSocket等待连接。连接成功后写入起点和终点坐标
+
+package 画图交互;
+
+import java.awt.Graphics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+public class UIlistener implements MouseListener,Runnable {
+    DataOutputStream os;
+    volatile int x1 = 0,y1 = 0,x2 = 0,y2 = 0;
+    Graphics g;
+    //在设置监听器的同时启动监听器对象的线程
+    public UIlistener(Graphics g) {
+        this.g = g;
+        Thread t = new Thread(this);
+        t.start();
+    }
+    //记录鼠标按下的坐标
+    @Override
+    public void mousePressed(MouseEvent e) {
+        x1 = e.getX();
+        y1 = e.getY();
+    }
+    //记录鼠标释放的坐标，且在界面上画出按下点到是释放点的线段
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        x2 = e.getX();
+        y2 = e.getY();
+        g.drawLine(x1, y1, x2, y2);
+
+    }
+
+    /*
+     * run（）中将本台电脑作为一个服务器端口设置为9090，在客户端连接上之后得到数据输出流
+     */
+
+    public void run() {
+        try {
+        //设置服务器并置于等待链接状态
+        ServerSocket ss = new ServerSocket(9090);
+        Socket server = ss.accept();
+        //连接成功后得到数据输出流
+        os = new DataOutputStream(server.getOutputStream());    
+        } catch (IOException e) {
+            e.printStackTrace();
+        }   
+        //x1,y1为起始点坐标，x2,y2为终点坐标。四个点的初始值设为0
+        while (true) {
+            //服务器界面画下一条线时，将四个点的信息写入到数据输出流中，之后将四个数据置0
+            if(x1!=0&&x2!=0) {
+                try {
+                    os.writeInt(x1);
+                    os.writeInt(y1);
+                    os.writeInt(x2);
+                    os.writeInt(y2); 
+                    x1 = 0;
+                    y1 = 0;
+                    x2 = 0;
+                    y2 = 0;
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+            }
+
+    }
+
+
+    @Override
+    public void mouseClicked(MouseEvent e) {}
+
+    @Override
+    public void mouseEntered(MouseEvent e) {}
+
+    @Override
+    public void mouseExited(MouseEvent e) {}
+}
+
+    
+
+乙方为客户端，包括一个类用于界面的构造以及socket的建立
+package 画图交互;
+
+import java.awt.Graphics;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+import javax.swing.JFrame;
+
+public class ClientPanel extends JFrame implements Runnable{
+    int x1,x2,y1,y2;
+    DataInputStream is;
+    Graphics g;
+
+    public static void main(String args[]) {
+        ClientPanel CP =new ClientPanel();
+        CP.creat();
+        CP.ShowUI();
+    }
+    //产生一个Socket类用于连接服务器，并得到输入流
+    public void creat() {
+        try {
+            Socket client =new Socket("10.96.114.57",9090);
+            is = new DataInputStream( client.getInputStream());
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    //构造客户端界面并启动线程
+    public void ShowUI() {
+        JFrame jf = new JFrame();
+        jf.setTitle("客户端界面");
+        jf.setSize(300,300);
+        jf.setDefaultCloseOperation(3);
+        jf.setLocationRelativeTo(null);
+        jf.setResizable(false);
+        jf.setVisible(true);
+        g =  jf.getGraphics();
+        Thread t = new Thread(this);
+        t.start();
+
+    }
+    //将is输入流终中的坐标得到，并根据坐标信息画出相应的线段。
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                    x1 = is.readInt();
+                    y1 = is.readInt();
+                    x2 = is.readInt();
+                    y2 = is.readInt();
+                    System.out.println(x1+" "+y2+" "+x2+" "+y2);
+                    g.drawLine(x1,y1,x2,y2);
+
+            } catch (IOException e) {
+            e.printStackTrace();
+        }
+        }
+    }
+
+}
+
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+    8
+    9
+    10
+    11
+    12
+    13
+    14
+    15
+    16
+    17
+    18
+    19
+    20
+    21
+    22
+    23
+    24
+    25
+    26
+    27
+    28
+    29
+    30
+    31
+    32
+    33
+    34
+    35
+    36
+    37
+    38
+    39
+    40
+    41
+    42
+    43
+    44
+    45
+    46
+    47
+    48
+    49
+    50
+    51
+    52
+    53
+    54
+    55
+    56
+    57
+    58
+    59
+    60
+    61
+    62
+    63
+
+以上为远程画板的实现，远程画板中应用到了线程和监听机制，是对’之前所学知识的总结，并开始学习聊天室的制作。
+
+文章最后发布于: 2018年03月15日 14:04:51
+java的远程通讯的几种方法
+
+阅读数 1871
+
+RMI介绍RMI（RemoteMethodInvocation）为远程方法调用，是允许运行在一个Java虚拟机的对象调用运行在另一个Java虚拟机上的对象的方法。这两个虚拟机可以是运行在相同计算机上的... 博文
+来自： 宽容、善待他人与自己
+java远程通讯技术及简单实现
+
+阅读数 5623
+
+在分布式服务框架中，一个最基础的问题就是远程服务是怎么通讯的，在Java底层领域中有很多可实现远程通讯的技术，例如：RMI、MINA、ESB、Burlap、SOAP、EJB和JMS等，在j2ee中,对... 博文
+来自： 曹胜欢
+远程通信的几种选择
+
+阅读数 2848
+
+远程通信的几种选择（RPC，Webservice，RMI，JMS的区别）方式：RPC（RemoteProcedureCallProtocol）RPC使用C/S方式，采用http协议,发送请求到服务器，... 博文
+来自： lxz352907839的博客
+军事理论课答案（西安交大版）
+
+阅读数 141万+
+
+1.11【单选题】我国陆地领土面积排名世界第几？（C）A、1B、2C、3D、42【单选题】以下哪个国家不属于金砖五国（BRICS）？（B）A、中国B、日本C、印度D、俄罗斯3【单选题】以下哪位学者主张... 博文
+来自： ling_wang的博客
+分布式服务框架远程服务通讯简单实现
+
+阅读数 416
+
+转自：http://staratsky.iteye.com/blog/345593 在分布式服务框架中，一个最基础的问题就是远程服务是怎么通讯的，在Java底层领域中有很多可实现远程通讯的技术，例如：... 博文
+来自： xianymo的专栏
+java 远程通信	
+12-02
+
+如题，java远程通信除了Socket和RMI之外，还有其他在实际中应该比较广泛的开源框架吗？ MPI可以实现远程通信的并行计算吗？若不是，MPI具体什么用途呢？我只知道它用来做并行计算，能否详细介绍 论坛
+java远程通信	
+
+阅读数 431
+
+博文
+来自： mcgwinds的博客
+java远程通讯可选技术及原理 12-23
+介绍Java远程通讯可选技术，如RML、XML-RPC、Binary-RPC、SOAP、JMS
+下载
+即时远程涂鸦 01-21
+获取本机手机号进行登陆 添加好友手机号码 即可进行互动涂鸦
+下载
+远程协同系统架构 - moonlightpeng的博客 - CSDN博客
+
+7-1
+aidl服务---远程通信 - weixin_41069726的博客 - CSDN博客
+
+5-12
+Java网络白板 01-04
+用Java编写界面，用seversocket创建服务端，socket创建客户端，实现简单图形绘画和一对多聊天，客户端和服务端都能显示在线用户
+下载
+java新手上路(一):输出三菱图标 - Carter0524的博客 - CSDN博客
+
+10-28
+java小试牛刀(一):碰撞吧,小球 - Carter0524的博客 - CSDN博客
+
+9-21
+Java远程通讯可选技术及原理（一） 04-17
+Java远程通讯可选技术及原理（一）
+下载
+敬li关注
+敬li
+
+7篇文章
+
+排名:千里之外
+
+曹胜欢
+关注
+曹胜欢
+
+247篇文章
+
+排名:241
+
+archerLuoV关注
+archerLuoV
+
+55篇文章
+
+排名:千里之外
+
+ling_wang关注
+ling_wang
+
+221篇文章
+
+排名:千里之外
+
+java画板总结 - asd245025733的博客 - CSDN博客
+
+7-2
+java新手上路(四):接口,事件监听 - Carter0524的博客 - CSDN博客
+
+9-26
+java画板总结
+
+阅读数 573
+
+java画板功能实现总结：      写一个DrawLitenner类，继承MouseListener,MouseMotionListener两个接口：publicclassDrawLitenerim... 博文
+来自： asd245025733的博客
+UDP白板画图程序
+
+阅读数 92
+
+一、服务器端package白板画图;importjavax.swing.*;importjava.awt.*;importjava.io.IOException;importjava.net.Data... 博文
+来自： qq_41024464的博客
+java之通信之初接触之小感,附上及其简单网络画板的代码..._CSDN博客
+
+5-17
+java远程通讯技术及简单实现 - z1074907546的博客 - CSDN博客
+
+7-10
+java 各种远程通信技术
+
+阅读数 2543
+
+ 在分布式服务框架中，一个最基础的问题就是远程服务是怎么通讯的，在Java领域中有很多可实现远程通讯的技术，例如：RMI、MINA、ESB、Burlap、Hessian、SOAP、EJB和JMS等，这... 博文
+来自： halemyan的专栏
+java新手上路(六):分形的艺术 - Carter0524的博客 - CSDN博客
+
+11-21
+java共享画板	12-09
+基于java开发的多用户共享画板。用户共享屏幕，用户可以在一个画板上画正方形，圆形，椭圆形，自由图形。有橡皮擦和添加文字功能。 附带聊天功能。
+下载
+怎样实现实时的在线画板	
+08-02
+
+在做一个在线教育应用，其中角色为“讲师”的有个画板功能，可以在画板区域内进行涂鸦，具体的绘制我知道，我想问的是怎样实时的将讲师的画板上的内容同步到其他观看他直播人的手机中。现在没什么思路，有知道的兄台 论坛
+网络画图板(一)
+
+阅读数 126
+
+ 网络画图板;客户端在向服务器发送信息的时候需要定义发送的协议,简称通信协议 形状类型 inttype; 0直线 1矩形 2椭圆形状数据 intx1,y1,x2,y2; 服务器;只需要不停的接受客户端... 博文
+来自： 代码写到地老天荒
+java网络画板(联网画图板) 05-14
+用java编写的网络画板应用，应用socket技术，可选择当客户端以及服务器端，局域网连接，可实时聊天，实时显示多方所画内容，可选线条粗细，颜色，实线虚线，以及图形样式，界面简洁，功能强大方便扩展，通
+下载
+想实现一个网络共享的画板的功能
+05-27
+
+之前在思科公司见到远程的会议 上面有个功能 就是有个画板，凡是连接到这个网络登陆软件的 那么就都可以看见这个画板上画的东西 就是实时看见的 也就是是A一边画一边说，远端的b就可以看见自己机器上的画板上 论坛
+通信（服务器客户端的群聊与网络画板）
+
+阅读数 50
+
+进入了通信阶段，感觉和之前学的内容差异很大，对这方面也没有之前那么感兴趣……有点缺乏热情进度上不来……同时还在改进之前的线程游戏，很久没更新了。做了可以连接多个客户端，群发消息的服务器，和可以同步画图... 博文
+来自： liangiris的博客
+java远程处理
+
+阅读数 107
+
+Java远程方法调用(RMI)提供了Java程序语言的远程通讯功能,这种特性使客户机上运行的程序可以调用远程服务器上的对象,使Java编程人员能够在网络环境中分布操作。 创建一个简单的Java分布式远... 博文
+来自： Playboy
+Java远程通讯可选技术及原理
+
+阅读数 1983
+
+Java远程通讯可选技术及原理   在分布式服务框架中，一个最基础的问题就是远程服务是怎么通讯的，在Java领域中有很多可实现远程通讯的技术，例如：RMI、MINA、ESB、Burlap、Hessia... 博文
+来自： xiaomin1991222的专栏
+JAVA图形编程Swing之——JPanel绘图
+
+阅读数 2万+
+
+JAVA图形编程Swing之——JPanel 博文
+来自： fanwenjieok的专栏
+Java画图板的简单实现。（重绘，多边形，曲线画笔，画图片）
+
+阅读数 3882
+
+思路：①画图板的界面②创建监听器类③给按钮加上鼠标监听③画图版的重绘第一部分：界面类①画图板的界面③给按钮加上鼠标监听publicclassSampleDrawextendsJFrame{public... 博文
+来自： lzq1326253299的博客
+html5在线画板	
+
+阅读数 6603
+
+http://jyffly.applinzi.com/canvas/index.html效果演示： 博文
+来自： 编程邦
+java远程通信原理
+
+阅读数 2370
+
+在分布式服务框架中，一个最基础的问题就是远程服务是怎么通讯的，在java领域中有很多可实现远程通讯的技术，例如：rmi、mina、esb、burlap、hessian、soap、ejb和jms等，这些... 博文
+几种java远程调用通讯协议的比较
+
+阅读数 4946
+
+一、综述本文比较了RMI，Hessian，Burlap，Httpinvoker，webservice等5种通讯协议的在不同的数据结构和不同数据量时的传输性能。RMI是java语言本身提供的通讯协议，稳... 博文
+来自： 一个码农的博客
+iOS 画板(实现远程操控、教学)
+
+阅读数 1365
+
+前言：我们开发一款名为《电影神灯》的软件，是一款学习情景英语的软件，里面有直播功能，我们用的是网易的，实现了互动直播，然而对于教学来说并不是足够的，产品需要白板功能，虽然网易的有白板功能，但是，功能不... 博文
+来自： Quinn's blog ! I'm glad to be here!
+Java小程序之简易网络画板	
+
+阅读数 1461
+
+Java小项目之简易网络画板一、前言：Java是一门网络编程语言，强大的网络可以让数据进行传送；今天，我们就小试牛刀，看看Java是如何进行网络传输数据的；二、项目分析：1、功能需求：我们前面做个一个... 博文
+来自： BlueSky_USC的博客
+画画板--第三方开源--DrawableView
+
+阅读数 340
+
+Android上的第三方开源DrawableView支持手写，类似于写字板。DrawableView支持改变画笔颜色，画笔线条粗细，画布的手势缩放和拖曳显示部分区域。并最终支持将手绘的图保存到本地。在... 博文
+来自： xzylx1的博客
+java中间件学习5-java远程通信基本原理
+
+阅读数 597
+
+1、采用透明代理与调用者、服务提供者直连的解决方案如图，调用者只是从注册中心获取对应服务提供者的物理地址，通过对应的地址与服务提供者直连，这个时候就与注册中心无关，后期的调用对应接口就不会通过注册中心... 博文
+来自： u011513159的博客
+分布式服务架构之java远程调用技术浅析
+
+阅读数 5
+
+2019独角兽企业重金招聘Python工程师标准&gt;&gt;&gt;... 博文
+来自： weixin_33884611的博客
+java网站中单人文字聊天室. 并且有交互性的同步电子画板.应该怎么做?
+12-20
+
+最近想要做一个网站.. 并且想制作出一个用户可以点击页面上的按钮就开始跟这面指定的人聊天的系统.. 并且想在里面入交互性的电子画板. 就是一个人在上面画了一道线的话. 正在跟他聊天的人的电子画板上也会 论坛
+通信基础篇小项目-----简单网络画板的的实现
+
+阅读数 17
+
+博文
+来自： JoySeeDog
+java 实现即时聊天设计(利用ip进行远程通信)
+
+阅读数 4770
+
+先看下效果图，一端运行在远程服务器，一端在本机电脑上运行，在局域网内两端可正常通信，由于我学校网络是局域网，所以外网ip接收得到消息，反之外网发消息过来本机收不到。不是局域网的同学理论上可以直接通信。... 博文
+来自： An_Illusion的博客
+java网络通信技术示例：简单的聊天小程序
+
+阅读数 7790
+
+ 再学习完java的通信技术后，做了一个简单的窗体聊天程序。程序非常简单，主要目的是当练习巩固自己所学的东西，在这里写出来记录以下。下面直接上代码。首先是服务端代码：packageChatTwoPac... 博文
+来自： xlantian的博客
+c#次横坐标不显 c#dem文件 c#免安装版反编译工具 c# 深度 递归 c#网页如何调试 c# 添加自定义的属性 c#中去除窗体边框 dll ida修改c# c#实现打印功能 c# 线程结束时执行
+©️2019 CSDN 皮肤主题: skin3-template 设计师: CSDN官方博客
+
+渐无书
+
+TA的个人主页 >
+私信
+关注
+
+原创
+    9
+
+粉丝
+    4
+
+喜欢
+    3
+
+评论
+    4
+
+等级：
+
+访问：
+    6567 
+
+积分：
+    154 
+
+排名：
+    121万+
+
+勋章：
+最新文章
+
+    java新手上路（六）：分形的艺术
+    java小试牛刀（一）：碰撞吧，小球
+    java新手上路（五）：线程，多线程
+    java新手上路（四）：接口，事件监听
+    C语言小试牛刀（一）：活期储蓄帐目管理
+
+分类专栏
+
+    java新手 7篇
+    C语言训练 1篇
+    java-web 1篇
+
+归档
+
+    2018年3月 1篇
+    2017年8月 2篇
+    2017年7月 2篇
+    2017年6月 4篇
+
+？
+
+CSDN学院
+
+CSDN学院
+CSDN企业招聘
+
+CSDN企业招聘
+
+kefu@csdn.net
+
+QQ客服
+
+客服论坛
+
+400-660-0108
+
+工作时间 8:30-22:00
+
+关于我们招聘广告服务 网站地图
+
+百度提供站内搜索 京ICP备19004658号
+
+©1999-2019 北京创新乐知网络技术有限公司
+
+经营性网站备案信息
+网络110报警服务
+
+北京互联网违法和不良信息举报中心
+
+中国互联网举报中心家长监护版权申诉
+
+		</p>
+	</div>
+	<a name="dibu"></a>
+	<a href="#dingbu">到页面顶部</a>
+</body>
+</html>
