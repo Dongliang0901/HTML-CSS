@@ -10,7 +10,12 @@
 	<!--action: 服务器端地址（接收表单内容的地址）name: 表单名称 method: post|get-->
 	<!--post:将表单中的数据一并包含在表单主题中，一起传送到服务器，没有数据大小限制-->
 	<!--get:将表单的内容附加在URL地址的后面，所以限制了提交的内容的长度，不超过8192个字符，且不具有保密性-->
+	<form>
+		<!--input:文本域，没有结束</input>,type=text,文本输入域，type=password,密码输入域,name: 定义空间的名称value: 初始化值，打开浏览器的时候，文本框的内容，size: 设置控件的长度，maxlength:输入框中最大允许输入的字符数-->
+		账号：<input type="text"  name="name">
+		<br><br>
+		密码：<input type="password" name="password">
 	
-	
+	</form>
 </body>
 </html>
