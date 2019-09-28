@@ -10,14 +10,19 @@
 	<!--action: 服务器端地址（接收表单内容的地址）name: 表单名称 method: post|get-->
 	<!--post:将表单中的数据一并包含在表单主题中，一起传送到服务器，没有数据大小限制-->
 	<!--get:将表单的内容附加在URL地址的后面，所以限制了提交的内容的长度，不超过8192个字符，且不具有保密性-->
-	<form>
+	<form action="no" method="post">
 		<!--input:文本域，没有结束</input>,type=text,文本输入域，type=password,密码输入域,name: 定义空间的名称value: 初始化值，打开浏览器的时候，文本框的内容，size: 设置控件的长度，maxlength:输入框中最大允许输入的字符数-->
 		账号：<input type="text"  name="name" value="" size="10" maxlength="5">
 		<br><br>
 		密码：<input type="password" name="password" size="5">
-		<!--提交按钮：type=“submit”，提交， type=“reset”，重置，type=“button”，普通按钮-->
+		<!--提交按钮：type=“submit”，提交， type=“reset”，重置，type=“button”，普通按钮，radio:单选框，checkbox：复选框-->
+		爱好：<input type="radio" name="changge1">唱歌 <input type="radio" name="tiyu1">体育
+		爱好：<input type="check" name="changge2">唱歌 <input type="check" name="tiyu2">体育
+		性别：<input type="radio" name="sex">男 <input type="radio" name="sex">女
 		<br><br>
 		<input type="submit" value="提交">
+		<input type="reset" value="重置">
+		<input type="button" value="按钮">
 </form>
 </body>
 </html>
