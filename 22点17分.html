@@ -15,14 +15,29 @@
 		账号：<input type="text"  name="name" value="" size="10" maxlength="5">
 		<br><br>
 		密码：<input type="password" name="password" size="5">
-		<!--提交按钮：type=“submit”，提交， type=“reset”，重置，type=“button”，普通按钮，radio:单选框，checkbox：复选框-->
-		爱好：<input type="radio" name="changge1">唱歌 <input type="radio" name="tiyu1">体育
+		<!--提交按钮：type=“submit”，提交， type=“reset”，重置，type=“button”，普通按钮，radio:单选框，checkbox：复选框,单选框和复选框都可以用”checked“ 来默认选中, hidden:隐藏域-->
+		<input type="hidden" value="隐藏的内容" name="yincangyu" size="10">
+		爱好：<input type="radio" name="changge1" checked>唱歌 <input type="radio" name="tiyu1">体育
 		爱好：<input type="check" name="changge2">唱歌 <input type="check" name="tiyu2">体育
 		性别：<input type="radio" name="sex">男 <input type="radio" name="sex">女
+		<br><br>
+		<!--textarea：多行文本-->
+		自我介绍：<br>
+		<textarea cols="35" rows="10" name="自我介绍">
+			
+		
+		</textarea>
+		<!--option:下拉框，multiple:多选-->
+		地址：<select name="地址" multiple>
+		<option value="四川">四川</option>
+		<option value="成都">成都</option>
+		<option value="上海">上海</option>
+		</select>
 		<br><br>
 		<input type="submit" value="提交">
 		<input type="reset" value="重置">
 		<input type="button" value="按钮">
+		
 </form>
 </body>
 </html>
